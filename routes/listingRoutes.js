@@ -8,7 +8,23 @@ router.get("/", async (req, res) => {
     const listings = await Listing.find().populate("agent", "name email");
     res.json(listings);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error fetching all listings:", err.message);
+    res.status(500).json({ error: "An error occurred while fetching listings." });
+  }
+});
+
+// Get a Single Listing by ID
+router.get("/:id", async (req, res) => {
+  const { id } = req.params;
+  try {
+    const listing = await Listing.findById(id).populate("agent", "name email");
+    if (!listing) {
+      return res.status(404).json({ error: "Listing not found." });
+    }
+    res.json(listing);
+  } catch (err) {
+    console.error(`Error fetching listing with ID ${id}:`, err.message);
+    res.status(500).json({ error: "An error occurred while fetching the listing." });
   }
 });
 
@@ -32,7 +48,8 @@ router.post("/", async (req, res) => {
     await newListing.save();
     res.status(201).json(newListing);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error("Error creating a new listing:", err.message);
+    res.status(500).json({ error: "An error occurred while creating the listing." });
   }
 });
 
@@ -56,11 +73,17 @@ router.put("/:id", async (req, res) => {
         location,
         agent,
       },
-      { new: true }
+      { new: true, runValidators: true }
     );
+
+    if (!updatedListing) {
+      return res.status(404).json({ error: "Listing not found." });
+    }
+
     res.json(updatedListing);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(`Error updating listing with ID ${id}:`, err.message);
+    res.status(500).json({ error: "An error occurred while updating the listing." });
   }
 });
 
@@ -68,10 +91,14 @@ router.put("/:id", async (req, res) => {
 router.delete("/:id", async (req, res) => {
   const { id } = req.params;
   try {
-    await Listing.findByIdAndDelete(id);
+    const deletedListing = await Listing.findByIdAndDelete(id);
+    if (!deletedListing) {
+      return res.status(404).json({ error: "Listing not found." });
+    }
     res.json({ message: "Listing deleted successfully" });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error(`Error deleting listing with ID ${id}:`, err.message);
+    res.status(500).json({ error: "An error occurred while deleting the listing." });
   }
 });
 
